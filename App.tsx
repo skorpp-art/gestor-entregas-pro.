@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { DeliveryRecord, Worksheet, DriverLocalityMap, ToastMessage, TitularDriver } from './types';
-import DeliveryForm from './components/DeliveryForm';
-import DeliveryTable from './components/DeliveryTable';
-import SummaryPanel from './components/SummaryPanel';
-import HistoryManager from './components/HistoryManager';
-import OcrTool from './components/OcrTool';
-import DriverManagementModal from './components/DriverManagementModal';
-import { ToastContainer } from './components/Toast';
-import { UsersIcon } from './components/icons';
+import DeliveryForm from './components/DeliveryForm.jsx';
+import DeliveryTable from './components/DeliveryTable.jsx';
+import SummaryPanel from './components/SummaryPanel.jsx';
+import HistoryManager from './components/HistoryManager.jsx';
+import OcrTool from './components/OcrTool.jsx';
+import DriverManagementModal from './components/DriverManagementModal.jsx';
+import { ToastContainer } from './components/Toast.jsx';
+import { UsersIcon } from './components/icons.jsx';
 
-declare const html2canvas: any;
+const html2canvas = (window as any).html2canvas;
 
 const Logo = () => (
     <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-primary-500 shadow-lg">
@@ -21,13 +20,13 @@ const Logo = () => (
 );
 
 
-const App: React.FC = () => {
-    const [currentRecords, setCurrentRecords] = useState<DeliveryRecord[]>([]);
-    const [worksheets, setWorksheets] = useState<Worksheet[]>([]);
-    const [titularDrivers, setTitularDrivers] = useState<TitularDriver[]>([]);
-    const [editingRecord, setEditingRecord] = useState<DeliveryRecord | null>(null);
-    const [activeWorksheetId, setActiveWorksheetId] = useState<string>('current');
-    const [toasts, setToasts] = useState<ToastMessage[]>([]);
+const App = () => {
+    const [currentRecords, setCurrentRecords] = useState([]);
+    const [worksheets, setWorksheets] = useState([]);
+    const [titularDrivers, setTitularDrivers] = useState([]);
+    const [editingRecord, setEditingRecord] = useState(null);
+    const [activeWorksheetId, setActiveWorksheetId] = useState('current');
+    const [toasts, setToasts] = useState([]);
     const [isDriverModalOpen, setDriverModalOpen] = useState(false);
 
     // Load from localStorage on mount and perform data migration if needed
@@ -39,7 +38,7 @@ const App: React.FC = () => {
                 // Simple migration from old data structure
                 if (savedRecords.length > 0 && savedRecords[0].zone !== undefined) {
                     addToast('Actualizando formato de datos...', 'info');
-                    savedRecords = savedRecords.map((r: any) => ({
+                    savedRecords = savedRecords.map((r) => ({
                         ...r,
                         locality: r.zone,
                         parties: r.locations,
@@ -56,9 +55,9 @@ const App: React.FC = () => {
             if (savedWorksheetsRaw) {
                 let savedWorksheets = JSON.parse(savedWorksheetsRaw);
                  if (savedWorksheets.length > 0 && savedWorksheets[0].records.length > 0 && savedWorksheets[0].records[0]?.zone !== undefined) {
-                    savedWorksheets = savedWorksheets.map((ws: any) => ({
+                    savedWorksheets = savedWorksheets.map((ws) => ({
                         ...ws,
-                        records: ws.records.map((r: any) => ({
+                        records: ws.records.map((r) => ({
                             ...r,
                             locality: r.zone,
                             parties: r.locations,
@@ -76,7 +75,7 @@ const App: React.FC = () => {
             if (savedDriversRaw) {
                 let savedDrivers = JSON.parse(savedDriversRaw);
                 if (savedDrivers.length > 0 && savedDrivers[0].zone !== undefined) {
-                    savedDrivers = savedDrivers.map((d: any) => ({
+                    savedDrivers = savedDrivers.map((d) => ({
                         ...d,
                         locality: d.zone,
                         zone: undefined,
@@ -124,31 +123,31 @@ const App: React.FC = () => {
         return titularDrivers.reduce((acc, driver) => {
             acc[driver.name] = driver.locality;
             return acc;
-        }, {} as DriverLocalityMap);
+        }, {});
     }, [titularDrivers]);
 
-    const addToast = useCallback((message: string, type: ToastMessage['type']) => {
-        const newToast: ToastMessage = { id: Date.now(), message, type };
+    const addToast = useCallback((message, type) => {
+        const newToast = { id: Date.now(), message, type };
         setToasts(prev => [...prev, newToast]);
     }, []);
 
-    const removeToast = (id: number) => {
+    const removeToast = (id) => {
         setToasts(toasts => toasts.filter(toast => toast.id !== id));
     };
 
-    const handleSaveRecord = (recordData: Omit<DeliveryRecord, 'id'>, id?: string) => {
+    const handleSaveRecord = (recordData, id) => {
         if (id) { // Update
             setCurrentRecords(prev => prev.map(r => r.id === id ? { ...r, ...recordData, id } : r));
             addToast('Registro actualizado con éxito.', 'success');
         } else { // Create
-            const newRecord: DeliveryRecord = { ...recordData, id: Date.now().toString() };
+            const newRecord = { ...recordData, id: Date.now().toString() };
             setCurrentRecords(prev => [...prev, newRecord]);
             addToast('Registro guardado con éxito.', 'success');
         }
         setEditingRecord(null);
     };
 
-    const handleEditRecord = (record: DeliveryRecord) => {
+    const handleEditRecord = (record) => {
         setEditingRecord(record);
         const formElement = document.getElementById('delivery-form');
         if (formElement) {
@@ -156,7 +155,7 @@ const App: React.FC = () => {
         }
     };
 
-    const handleDeleteRecord = (id: string) => {
+    const handleDeleteRecord = (id) => {
         setCurrentRecords(prev => prev.filter(r => r.id !== id));
         addToast('Registro eliminado.', 'info');
     };
@@ -170,7 +169,7 @@ const App: React.FC = () => {
             addToast('No hay registros en la planilla actual para archivar.', 'error');
             return;
         }
-        const newWorksheet: Worksheet = {
+        const newWorksheet = {
             id: Date.now().toString(),
             date: new Date().toISOString(),
             records: [...currentRecords]
@@ -180,7 +179,9 @@ const App: React.FC = () => {
         addToast('Planilla archivada con éxito.', 'success');
     };
 
-    const handleSelectWorksheet = (id: string) => {
+
+
+    const handleSelectWorksheet = (id) => {
         setActiveWorksheetId(id);
         setEditingRecord(null); 
     };
@@ -205,14 +206,14 @@ const App: React.FC = () => {
                 scale: 1.5,
                 useCORS: true,
                 backgroundColor: document.body.classList.contains('dark') ? '#020617' : '#f8fafc'
-            }).then((canvas: HTMLCanvasElement) => {
+            }).then((canvas) => {
                 const link = document.createElement('a');
                 const date = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
                 link.download = `planilla-${date}.jpg`;
                 link.href = canvas.toDataURL('image/jpeg', 0.95);
                 link.click();
                 addToast('Descarga iniciada.', 'success');
-            }).catch((err: any) => {
+            }).catch((err) => {
                 console.error("Error generating JPG:", err);
                 addToast('Error al generar la imagen.', 'error');
             });
@@ -221,18 +222,18 @@ const App: React.FC = () => {
         }
     };
     
-    const handleSaveTitularDriver = (driverData: Omit<TitularDriver, 'id'>, id?: string) => {
+    const handleSaveTitularDriver = (driverData, id) => {
         if(id) {
             setTitularDrivers(prev => prev.map(d => d.id === id ? { ...d, ...driverData, id } : d));
             addToast('Conductor actualizado.', 'success');
         } else {
-            const newDriver: TitularDriver = { ...driverData, id: Date.now().toString() };
+            const newDriver = { ...driverData, id: Date.now().toString() };
             setTitularDrivers(prev => [...prev, newDriver]);
             addToast('Conductor titular guardado.', 'success');
         }
     };
     
-    const handleDeleteTitularDriver = (id: string) => {
+    const handleDeleteTitularDriver = (id) => {
         if(window.confirm('¿Seguro que quieres eliminar este conductor titular?')) {
             setTitularDrivers(prev => prev.filter(d => d.id !== id));
             addToast('Conductor eliminado.', 'info');
